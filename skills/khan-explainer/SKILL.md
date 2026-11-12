@@ -1,6 +1,6 @@
 ---
 name: khan-explainer
-description: Use when the user wants a Khan Academy style explainer video, a blackboard or whiteboard lesson, a hand-drawn chalk-talk animation, a short narrated video that teaches a concept ("explain X in a video", "explainer video", "teach X in 30 seconds"), or a tutorial that draws hand-written arrows, circles and captions over product screenshots ("draw over the UI", "annotated walkthrough"), or clips cut from a YouTube video or podcast where the speaker's real audio plays under a blackboard drawn to it ("khanify this video", "clip this with the Khan visual"), especially when it must be free, local, and use no paid APIs or keys. macOS only.
+description: Use when the user wants a Khan Academy style explainer video, a blackboard or whiteboard lesson, a hand-drawn chalk-talk animation, a short narrated video that teaches a concept ("explain X in a video", "explainer video", "teach X in 30 seconds"), or a tutorial that draws hand-written arrows, circles and captions over product screenshots ("draw over the UI", "annotated walkthrough"), or clips cut from a YouTube video or podcast where the speaker's real audio plays under a blackboard drawn to it ("khanify this video", "clip this with the Khan visual"), especially when it must be free, local, and use no paid APIs or keys. Windows-first in this fork; macOS/Linux paths are retained as compatibility code, but Windows is the primary tested target.
 ---
 
 > Copy of the root SKILL.md for skills.sh discovery. The root file is the source of truth.
@@ -13,7 +13,7 @@ A pen draws while a voice explains. Three modes, one renderer:
 - **Draw-over-UI tutorial.** Arrows, circles and numbered captions drawn over product screenshots.
 - **Real-audio clip.** A real person's voice, cut from a video, with the board drawn to their words. See "Real-audio clips".
 
-One scene file in, one MP4 out, in seconds. Free and local: HTML canvas, Playwright, macOS `say`, ffmpeg. No keys.
+One scene file in, one MP4 out, in seconds. Free and local: HTML canvas, Playwright, Windows System.Speech or eSpeak NG, and ffmpeg. No key is required for the local voice path.
 Every mode renders as chalk on a blackboard or marker on a whiteboard, landscape or vertical.
 
 Made by Haider Farooq ([github.com/haiderfarooq3](https://github.com/haiderfarooq3/khan-explainer)). Free for anyone to use and change (MIT).
@@ -238,4 +238,5 @@ For many clips, finish one as the worked example, write the rules above into a b
 
 ## Limits
 
-Built for macOS. On Linux the free voice falls back to espeak-ng (`apt install espeak-ng`), which speaks about a hundred languages but sounds rougher still; install the Noto fonts for the scripts you write. On Windows the free voice is the system's own (Settings > Time & language > Speech > Add voices), and espeak-ng (`winget install eSpeak-NG.eSpeak-NG`) speaks any language Windows has no voice for; the board uses Windows' own faces (Ink Free, Nirmala UI, KaiTi, Yu Gothic, Malgun Gothic, Leelawadee UI). Kokoro and faster-whisper fetch their models from Hugging Face on first use; where that download hangs, set `HF_ENDPOINT=https://hf-mirror.com` for the first run. The free voice is robotic: use `eleven` or real audio when the voice matters. `tts()` in `scripts/render.js` is the one place to swap in another engine.
+This fork is developed and tested primarily on Windows. Windows uses installed System.Speech voices first (Settings > Time & language > Speech > Add voices), then eSpeak NG for languages without a matching system voice. macOS `say` and Linux eSpeak NG remain supported code paths, but they are compatibility paths rather than the primary release target. Kokoro and faster-whisper fetch their models from Hugging Face on first use; where that download hangs, set `HF_ENDPOINT=https://hf-mirror.com` for the first run. The free voice is robotic: use `eleven` or real audio when the voice matters. `tts()` in `scripts/render.js` is the one place to swap in another engine.
+

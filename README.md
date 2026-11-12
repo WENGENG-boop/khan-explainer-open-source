@@ -1,119 +1,101 @@
 # khan-explainer
 
-A Claude Code skill that makes Khan Academy style explainer videos: a pen draws while a voice explains. You describe the video, Claude writes a scene file, and one command renders the MP4.
+一个面向 **Windows 10/11** 的 Claude Code 技能：把文字说明渲染成可汗学院风格的手写讲解视频。你描述主题，Claude 生成场景文件，`render.js` 输出 MP4。
 
-Write-up: [Claude Code skills for content: how I make Khan Academy style videos for free](https://haiderfarooq.dev/blog/claude-code-skills-for-content)
+这个 fork 的主要开发和验证环境是 Windows。macOS 和 Linux 的代码路径仍保留，但本仓库不把它们作为当前发布版本的主要支持目标，也不承诺与 Windows 版本完全一致。
 
-![The same scene on the blackboard and on the whiteboard](docs/board.jpg)
+## 能做什么
 
-It runs on your own machine (macOS, Windows or Linux) with an HTML canvas, Playwright, ffmpeg and the system's built-in voice. No API keys, no accounts, no editor.
+- **黑板/白板讲解**：边说边画图，笔画和语音自动同步。
+- **截图标注教程**：在产品截图上绘制箭头、圆圈和步骤。
+- **真实音频剪辑**：把视频或播客的真实声音配到手绘板书上。
+- 横屏、竖屏、深色黑板和浅色白板均可使用。
 
-## What it makes
+## Windows 安装
 
-| Mode | What you get |
-|---|---|
-| Blackboard lesson | A diagram drawn stroke by stroke while the voice explains it. |
-| Draw-over-UI tutorial | Arrows, circles and numbered steps drawn over your product screenshots. |
-| Real-audio clip | A YouTube video or podcast in, vertical shorts out. The speaker's own voice plays while the board is drawn to their words. It can also cut the speaker out and stand them in front of the board. |
+需要：
 
-Every mode renders as chalk on a blackboard or marker on a whiteboard, landscape or vertical. One flag switches between them, and a single beat can flip the board mid-video.
+- Windows 10 或 Windows 11
+- Node.js 20 或更高版本
+- ffmpeg / ffprobe
+- Playwright Chromium
+- 至少一个 Windows 语音（系统通过 PowerShell `System.Speech` 调用）
 
-## Why the pen stays in sync
-
-The voice drives the clock. A scene is a list of beats, and a beat is one spoken clause plus the drawing that happens while it is said. The renderer speaks each beat first, measures it, and fits that beat's drawing to its length. Nobody types a timestamp, so the pen cannot run ahead of the words.
-
-```js
-scene({
-  beats: [
-    { say: 'What is an AI agent?', draw: p => {
-        write('What is an AI agent?', 60, 85, p, { size: 56, color: C.yellow });
-    } },
-    { say: "It's software that uses a language model to think,", draw: p => {
-        stroke(oval(300, 330, 155, 82), seg(p, 0, .4), { color: C.blue });
-        write('1. THINK', 300, 328, seg(p, .4, 1), { size: 40, color: C.blue, center: true });
-    } },
-  ],
-})
-```
-
-## Install
-
-You need Node 20 or newer and ffmpeg.
-
-**macOS**
-
-```sh
-brew install ffmpeg
-git clone https://github.com/WENGENG-boop/khan-explainer-open-source ~/.claude/skills/khan-explainer
-cd ~/.claude/skills/khan-explainer/scripts && npm install && npx playwright install chromium
-```
-
-**Windows** (PowerShell)
+PowerShell：
 
 ```powershell
-winget install Gyan.FFmpeg eSpeak-NG.eSpeak-NG astral-sh.uv
+winget install Gyan.FFmpeg
+winget install eSpeak-NG.eSpeak-NG
+winget install astral-sh.uv
+```
+
+然后安装项目依赖：
+
+```powershell
 git clone https://github.com/WENGENG-boop/khan-explainer-open-source $HOME\.claude\skills\khan-explainer
-cd $HOME\.claude\skills\khan-explainer\scripts; npm install; npx playwright install chromium
+cd $HOME\.claude\skills\khan-explainer\scripts
+npm ci
+npx playwright install chromium
 ```
 
-Open a new terminal afterwards so the new PATH is picked up. English and Chinese speak with the voices Windows ships; add more under Settings > Time & language > Speech, and espeak-ng speaks every other language. Run the talking-head script from Git Bash.
+安装 Windows 语音：打开“设置 > 时间和语言 > 语音”，添加需要的语言。英文和中文场景优先使用已安装的 Windows 语音；没有对应语言时，渲染器会尝试使用 eSpeak NG。
 
-**Linux** (Debian/Ubuntu)
+## 使用
 
-```sh
-sudo apt install ffmpeg espeak-ng fonts-noto-core fonts-noto-cjk fonts-noto-extra
-git clone https://github.com/WENGENG-boop/khan-explainer-open-source ~/.claude/skills/khan-explainer
-cd ~/.claude/skills/khan-explainer/scripts && npm install && npx playwright install --with-deps chromium
+让 Claude Code 生成场景，或直接渲染示例：
+
+```powershell
+cd $HOME\.claude\skills\khan-explainer
+node scripts/render.js examples/ai-agents.js agents.mp4
+$env:KHAN_THEME='light'; node scripts/render.js examples/ai-agents.js light.mp4
+Remove-Item Env:KHAN_THEME
+node scripts/render.js examples/ui-tutorial.js tutorial.mp4
+node scripts/render.js examples/languages.js languages.mp4
 ```
 
-| | macOS | Windows | Linux |
-|---|---|---|---|
-| Free voice | `say` | Windows voices, then espeak-ng | espeak-ng |
-| Handwriting font | Bradley Hand | Ink Free | system cursive |
-| Talking-head cutout | macOS Vision | MediaPipe | MediaPipe |
+每次渲染都会输出一个 contact sheet 路径，用来检查每个 beat 结束时的画面。最终 MP4 和 contact sheet 不会自动提交到 Git；`.gitignore` 已排除常见输出、缓存和本地环境目录。
 
-## Use
+## 语音模式
 
-Ask Claude Code for the video you want:
+默认使用 Windows 已安装的系统语音。也可以使用：
 
-> Make a 30-second Khan-style explainer on how DNS works.
+- **Kokoro**：本地语音，需要 Python 3.12 和 `uv`；第一次运行会下载模型。
+- **ElevenLabs**：可选的在线语音，需要你自己设置 `ELEVENLABS_API_KEY`，不要把 key 写入场景文件或提交到 Git。
+- **真实音频**：场景使用 `audio` 和 beat 时间戳。
 
-> Draw over these screenshots and show a new user how to send their first invoice.
+Kokoro 示例：
 
-> Khanify this YouTube video: find the best moments and clip them, light and dark.
-
-Or render one of the examples yourself:
-
-```sh
-cd ~/.claude/skills/khan-explainer
-node scripts/render.js examples/ai-agents.js agents.mp4                    # blackboard
-KHAN_THEME=light node scripts/render.js examples/ai-agents.js light.mp4    # whiteboard
-node scripts/render.js examples/ui-tutorial.js tutorial.mp4                # drawn over screenshots
-node scripts/render.js examples/arabic.js arabic.mp4                      # right-to-left writing
-node scripts/render.js examples/languages.js languages.mp4                # one word in eight languages
+```powershell
+cd $HOME\.claude\skills\khan-explainer\scripts
+uv venv --python 3.12 .venv
+uv pip install --python .venv kokoro soundfile
+$env:KHAN_TTS='kokoro'
+node ..\tests\run.js out
+Remove-Item Env:KHAN_TTS
 ```
 
-In PowerShell, set the theme first: `$env:KHAN_THEME='light'; node scripts/render.js examples/ai-agents.js light.mp4` (then `Remove-Item env:KHAN_THEME`).
+真实音频剪辑和 talking-head 示例还需要 `uv` 以及相应的本地依赖；Windows 下的 `talking_head_example.sh` 通过 Git Bash 运行，人物抠像使用 MediaPipe。macOS Vision 代码是保留的兼容路径，不是本 fork 的主要验证路径。
 
-Each render also prints the path of a contact sheet: the board at the end of every beat, in one image. That sheet is how Claude checks its own layout before it shows you anything.
+## 测试
 
-[SKILL.md](SKILL.md) is the full reference: the scene API, layout rules, the capture recipe for tutorials and the clip pipeline.
+在 PowerShell 中：
 
-## Optional extras
+```powershell
+cd $HOME\.claude\skills\khan-explainer
+node tests/fonts.js
+node tests/run.js out
+```
 
-- **A human voice.** Export `ELEVENLABS_API_KEY` and add `eleven: '<voice id>'` to a scene. The script is read in one take and cut back into beats, and takes are cached, so re-rendering the same words is free.
-- **Kokoro, a free local human voice.** Install it into a Python 3.12 environment at `scripts/.venv`, which the renderer finds on its own: `uv venv --python 3.12 scripts/.venv`, then `uv pip install --python scripts/.venv kokoro soundfile`. Put `kokoro: true` on a scene, or set `KHAN_TTS=kokoro` for any scene. English, Spanish, French, Hindi, Italian, Japanese, Portuguese and Chinese. [SKILL.md](SKILL.md) lists the extra packages for Japanese and Chinese.
-- **Any language on the board.** Arabic, Urdu and Hebrew are written right to left, Hindi, Thai, Chinese, Japanese, Korean, Russian and more left to right, each in a face that writes it properly. `lang: 'ar'` on a scene picks the matching voice. `node tests/run.js` renders them all.
-- **Real-audio clips** need [uv](https://docs.astral.sh/uv/). `scripts/clip_audio.py` transcribes locally with faster-whisper. On Windows, yt-dlp cannot read Chrome or Edge cookies: export a `cookies.txt` from a signed-in YouTube tab and pass `--cookies cookies.txt`.
-- **The talking-head cutout** uses macOS Vision, which builds itself with `swiftc` the first time (needs the Xcode command line tools). On Windows and Linux it uses MediaPipe instead, fetched by `uv`.
-- **Slow model downloads.** Kokoro and faster-whisper download their models from Hugging Face on first use. If that hangs, set `HF_ENDPOINT=https://hf-mirror.com` for the first run.
+`tests/run.js` 会渲染示例和多语言场景，并在出现布局警告时失败。仓库中的 `tests/results/SUMMARY.md` 保存了此前的测试记录；它不是当前机器运行结果的保证。
 
-## Tests
+## 项目结构
 
-`node tests/run.js` renders every example and fifteen languages and fails on any layout warning; `node tests/fonts.js` shows which font each script gets. The latest full Windows run is in [tests/results/SUMMARY.md](tests/results/SUMMARY.md): 45 of 45 checks pass, with the talking head on real footage still to be verified.
+- `scripts/render.js`：Windows 语音、Playwright、ffmpeg 渲染入口。
+- `scripts/board.html`：浏览器画板和绘图 API。
+- `examples/`：示例场景。
+- `tests/`：字体和多语言渲染测试。
+- `SKILL.md`：完整场景 API 和使用说明。
 
-## Credits
+## 许可证
 
-Made by [Haider Farooq](https://github.com/haiderfarooq3). Windows support in this fork by [WENGENG-boop](https://github.com/WENGENG-boop). MIT licensed: use it, change it, ship videos with it.
-
-Not affiliated with or endorsed by Khan Academy. "Khan Academy style" describes the look: handwriting on a board, drawn as it is explained.
+MIT。项目采用 “Khan Academy style” 的视觉描述，与 Khan Academy 官方没有隶属或背书关系。
