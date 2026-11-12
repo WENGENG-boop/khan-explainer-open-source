@@ -1,6 +1,7 @@
 {
   "name": "khan-explainer",
   "private": true,
-  "description": "Blackboard explainer renderer: canvas + Playwright + macOS say + ffmpeg",
+  "description": "Windows-first blackboard explainer renderer: canvas + Playwright + System.Speech/eSpeak NG + ffmpeg",
   "dependencies": { "playwright": "1.62.1" }
 }
+
